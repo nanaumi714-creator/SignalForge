@@ -66,3 +66,40 @@ class SnapshotRecord(BaseModel):
     video_count: int | None = None
     collected_at: datetime | None = None
     created_at: datetime | None = None
+
+
+class ScoreInput(BaseModel):
+    """Input payload used for GPT scoring prompt."""
+
+    entity_id: str
+    display_name: str
+    category: str | None = None
+    subscribers: int | None = None
+    total_views: int | None = None
+    upload_freq_days: float | None = None
+    recent_videos_json: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class ScoreOutput(BaseModel):
+    """Validated GPT scoring output."""
+
+    demand_match: int = Field(ge=0, le=30)
+    improvement_potential: int = Field(ge=0, le=20)
+    ability_to_pay: int = Field(ge=0, le=15)
+    ease_of_contact: int = Field(ge=0, le=15)
+    style_fit: int = Field(ge=0, le=20)
+    summary: str = Field(min_length=1, max_length=200)
+    fit_reasons: list[str] = Field(min_length=1)
+    recommended_offer: str = Field(min_length=1)
+
+    @property
+    def total_score(self) -> int:
+        """Return summed total score."""
+
+        return (
+            self.demand_match
+            + self.improvement_potential
+            + self.ability_to_pay
+            + self.ease_of_contact
+            + self.style_fit
+        )

@@ -126,3 +126,111 @@ def insert_snapshot(
     except Exception:
         logger.exception("Failed to insert snapshot. run_id=%s, entity_id=%s", run_id, entity_id)
         raise
+
+
+def get_snapshots_by_run(run_id: str) -> list[dict[str, Any]]:
+    """Fetch snapshots and joined entity data for a run."""
+
+    try:
+        sb = get_supabase_client()
+        response = (
+            sb.table("scout_snapshots")
+            .select(
+                "entity_id, subscriber_count, view_count, "
+                "scout_entities!inner(channel_title)"
+            )
+            .eq("run_id", run_id)
+            .execute()
+        )
+        rows = response.data or []
+        results: list[dict[str, Any]] = []
+
+        for row in rows:
+            entity = row.get("scout_entities") or {}
+            results.append(
+                {
+                    "entity_id": str(row["entity_id"]),
+                    "display_name": entity.get("channel_title") or "Unknown channel",
+                    "category": None,
+                    "subscribers": row.get("subscriber_count"),
+                    "total_views": row.get("view_count"),
+                    "upload_freq_days": None,
+                    "recent_videos_json": [],
+                }
+            )
+
+        return results
+    except Exception:
+        logger.exception("Failed to fetch snapshots by run. run_id=%s", run_id)
+        raise
+
+
+def insert_score(
+    run_id: str,
+    entity_id: str,
+    score_data: dict[str, Any],
+    gpt_model: str,
+) -> str:
+    """Insert or update score row and return score id."""
+
+    try:
+        total_score = (
+            int(score_data["demand_match"])
+            + int(score_data["improvement_potential"])
+            + int(score_data["ability_to_pay"])
+            + int(score_data["ease_of_contact"])
+            + int(score_data["style_fit"])
+        )
+
+        score_reason = {
+            "demand_match": score_data["demand_match"],
+            "improvement_potential": score_data["improvement_potential"],
+            "ability_to_pay": score_data["ability_to_pay"],
+            "ease_of_contact": score_data["ease_of_contact"],
+            "style_fit": score_data["style_fit"],
+            "fit_reasons": score_data["fit_reasons"],
+            "recommended_offer": score_data["recommended_offer"],
+            "gpt_model": gpt_model,
+            "score_delta": score_data.get("score_delta", 0),
+        }
+
+        payload = {
+            "run_id": run_id,
+            "entity_id": entity_id,
+            "total_score": total_score,
+            "category": "unclassified",
+            "score_reason": score_reason,
+            "trend_summary": score_data["summary"],
+        }
+
+        sb = get_supabase_client()
+        response = sb.table("scout_scores").upsert(payload, on_conflict="run_id,entity_id").execute()
+        data = response.data or []
+        if not data or "id" not in data[0]:
+            raise ValueError("Insert score response does not include score id.")
+
+        return str(data[0]["id"])
+    except Exception:
+        logger.exception("Failed to insert score. run_id=%s, entity_id=%s", run_id, entity_id)
+        raise
+
+
+def get_last_score(entity_id: str) -> dict[str, Any] | None:
+    """Fetch the most recent prior score for an entity."""
+
+    try:
+        sb = get_supabase_client()
+        response = (
+            sb.table("scout_scores")
+            .select("id, total_score, created_at")
+            .eq("entity_id", entity_id)
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+
+        rows = response.data or []
+        return rows[0] if rows else None
+    except Exception:
+        logger.exception("Failed to fetch last score. entity_id=%s", entity_id)
+        raise
