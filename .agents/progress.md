@@ -1,25 +1,25 @@
 # 進捗管理（AIセッション引き継ぎ）
 
 ## 現在のフェーズ
-現在: **Phase 2 / Collector 実装（開始前）**
+現在: **Phase 3 / Analyzer 実装（設計中）**
 
 ## 完了済みフェーズ
 - Phase 1: Foundation
+- Phase 2: Collector 実装
 
 ## 現フェーズの進捗
-- [x] Phase 1 設計書作成（docs/phase1/design.ja.md）
-- [x] config.py（pydantic-settings で .env 読み込み）
-- [x] supabase/migrations/001_init.sql（5テーブル全定義）
-- [x] db/client.py（Supabase クライアント初期化）
-- [x] db/queries.py（insert_run / update_run_status 実装）
-- [x] 疎通確認（ローカル Supabase での成功を確認）
-- [x] Python 仮想環境 (.venv) の作成と依存関係のインストール
+(Phase 2 完了)
+- [x] Phase 2 設計書作成（docs/phases/phase2_design.ja.md）
+- [x] models/schemas.py（Pydantic モデル定義）
+- [x] db/queries.py（upsert_entity / insert_snapshot 追加）
+- [x] worker/collector.py（YouTube API 連携実装）
+- [x] 動作確認（実APIキーを用いたデータ収集とDB保存の成功）
 
 ## ブロッカー
-- （特になし。パッケージ取得の制限は解消済みを確認）
+- （特になし。YouTube API キーの設定完了済み）
 
 ## 次のセッション開始時の指示
-AGENTS.md と `.agents/phases/phase1-foundation.md` を読んでから、`.env.example` 作成→`config.py` 実装→`db/client.py` 実装→`db/queries.py` 実装→疎通確認の順で作業を開始してください。
+Phase 3 (Analyzer) の実装を開始してください。`worker/analyzer.py` にて OpenAI API を用いたスコアリングとトレンド抽出を実装します。
 
 ## 更新ルール（AIへの指示）
 フェーズ完了時・セッション終了時に必ずこのファイルを更新すること。  

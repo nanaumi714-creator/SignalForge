@@ -53,3 +53,76 @@ def update_run_status(run_id: str, status: str, summary: dict[str, Any] | None =
     except Exception:
         logger.exception("Failed to update run status. run_id=%s status=%s", run_id, status)
         raise
+
+
+def upsert_entity(
+    platform: str,
+    platform_id: str,
+    channel_title: str | None = None,
+    channel_description: str | None = None,
+    country: str | None = None,
+    language: str | None = None,
+    published_at: str | None = None,
+) -> str:
+    """Upsert entity (creator) and return its UUID."""
+
+    try:
+        sb = get_supabase_client()
+        payload = {
+            "platform": platform,
+            "platform_id": platform_id,
+        }
+        if channel_title:
+            payload["channel_title"] = channel_title
+        if channel_description:
+            payload["channel_description"] = channel_description
+        if country:
+            payload["country"] = country
+        if language:
+            payload["language"] = language
+        if published_at:
+            payload["published_at"] = published_at
+
+        # Use ON CONFLICT (platform, platform_id) DO UPDATE implicitly via upsert
+        response = sb.table("scout_entities").upsert(
+            payload, on_conflict="platform,platform_id"
+        ).execute()
+
+        data = response.data or []
+        if not data or "id" not in data[0]:
+            raise ValueError("Upsert entity response does not include entity id.")
+
+        return str(data[0]["id"])
+    except Exception:
+        logger.exception("Failed to upsert entity. platform=%s, id=%s", platform, platform_id)
+        raise
+
+
+def insert_snapshot(
+    run_id: str,
+    entity_id: str,
+    subscriber_count: int | None = None,
+    view_count: int | None = None,
+    video_count: int | None = None,
+) -> str:
+    """Insert a snapshot for an entity."""
+
+    try:
+        sb = get_supabase_client()
+        payload = {
+            "run_id": run_id,
+            "entity_id": entity_id,
+            "subscriber_count": subscriber_count,
+            "view_count": view_count,
+            "video_count": video_count,
+        }
+        response = sb.table("scout_snapshots").insert(payload).execute()
+
+        data = response.data or []
+        if not data or "id" not in data[0]:
+            raise ValueError("Insert snapshot response does not include snapshot id.")
+
+        return str(data[0]["id"])
+    except Exception:
+        logger.exception("Failed to insert snapshot. run_id=%s, entity_id=%s", run_id, entity_id)
+        raise
