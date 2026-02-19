@@ -1,10 +1,10 @@
 # 進捗管理（AIセッション引き継ぎ）
 
 ## 現在のフェーズ
-現在: **Phase 1 / 基盤構築（実装中）**
+現在: **Phase 2 / Collector 実装（開始前）**
 
 ## 完了済みフェーズ
-（なし）
+- Phase 1: Foundation
 
 ## 現フェーズの進捗
 - [x] Phase 1 設計書作成（docs/phase1/design.ja.md）
@@ -12,7 +12,7 @@
 - [x] supabase/migrations/001_init.sql（5テーブル全定義）
 - [x] db/client.py（Supabase クライアント初期化）
 - [x] db/queries.py（insert_run / update_run_status 実装）
-- [ ] 疎通確認（scout_runs テーブルへの select が通る）
+- [x] 疎通確認（ローカル Supabase での成功を確認）
 - [x] Python 仮想環境 (.venv) の作成と依存関係のインストール
 
 ## ブロッカー
