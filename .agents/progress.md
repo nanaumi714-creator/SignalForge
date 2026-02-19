@@ -1,20 +1,22 @@
 # 進捗管理（AIセッション引き継ぎ）
 
 ## 現在のフェーズ
-現在: **Phase 1 / 基盤構築（着手前）**
+現在: **Phase 2 / Collector 実装（開始前）**
 
 ## 完了済みフェーズ
-（なし）
+- Phase 1: Foundation
 
 ## 現フェーズの進捗
-- [ ] config.py（pydantic-settings で .env 読み込み）
-- [ ] supabase/migrations/001_init.sql（5テーブル全定義）
-- [ ] db/client.py（Supabase クライアント初期化）
-- [ ] db/queries.py（insert_run / update_run_status 実装）
-- [ ] 疎通確認（scout_runs テーブルへの select が通る）
+- [x] Phase 1 設計書作成（docs/phase1/design.ja.md）
+- [x] config.py（pydantic-settings で .env 読み込み）
+- [x] supabase/migrations/001_init.sql（5テーブル全定義）
+- [x] db/client.py（Supabase クライアント初期化）
+- [x] db/queries.py（insert_run / update_run_status 実装）
+- [x] 疎通確認（ローカル Supabase での成功を確認）
+- [x] Python 仮想環境 (.venv) の作成と依存関係のインストール
 
 ## ブロッカー
-- なし
+- （特になし。パッケージ取得の制限は解消済みを確認）
 
 ## 次のセッション開始時の指示
 AGENTS.md と `.agents/phases/phase1-foundation.md` を読んでから、`.env.example` 作成→`config.py` 実装→`db/client.py` 実装→`db/queries.py` 実装→疎通確認の順で作業を開始してください。
