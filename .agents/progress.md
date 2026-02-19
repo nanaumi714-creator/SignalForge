@@ -13,9 +13,10 @@
 - [x] db/client.py（Supabase クライアント初期化）
 - [x] db/queries.py（insert_run / update_run_status 実装）
 - [ ] 疎通確認（scout_runs テーブルへの select が通る）
+- [x] Python 仮想環境 (.venv) の作成と依存関係のインストール
 
 ## ブロッカー
-- パッケージ取得のネットワーク制限により依存ライブラリの追加インストール不可（既存環境での実行は可能）
+- （特になし。パッケージ取得の制限は解消済みを確認）
 
 ## 次のセッション開始時の指示
 AGENTS.md と `.agents/phases/phase1-foundation.md` を読んでから、`.env.example` 作成→`config.py` 実装→`db/client.py` 実装→`db/queries.py` 実装→疎通確認の順で作業を開始してください。

@@ -52,8 +52,17 @@ scout/
 
 ## Setup
 ```bash
+# 仮想環境の作成と有効化 (Windows)
+python -m venv .venv
+.\.venv\Scripts\activate
+
+# 依存関係のインストール
 pip install -r requirements.txt
+
+# サーバー起動
 uvicorn main:app --reload --port 8000
+
+# 動作確認
 curl -X POST http://localhost:8000/v1/scout/runs -H "Content-Type: application/json" -d '{"run_type":"manual","notify_discord":false}'
 ```
 
