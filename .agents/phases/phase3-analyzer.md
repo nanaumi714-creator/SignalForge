@@ -8,7 +8,7 @@
 - スコアが Pydantic バリデーションを通過する
 
 ## タスクリスト
-- [ ] 1. `models/schemas.py` への追加
+- [x] 1. `models/schemas.py` への追加
   - `ScoreInput`
   - `ScoreOutput`
   - フィールド:
@@ -21,12 +21,12 @@
     - `fit_reasons`
     - `recommended_offer`
 
-- [ ] 2. `db/queries.py` への追加
+- [x] 2. `db/queries.py` への追加
   - `get_snapshots_by_run(run_id) -> list`
   - `insert_score(run_id, entity_id, score_data, gpt_model) -> score_id`
   - `get_last_score(entity_id) -> dict | None`
 
-- [ ] 3. `worker/analyzer.py` の実装
+- [x] 3. `worker/analyzer.py` の実装
   - `build_prompt(snapshot) -> str`
   - `call_gpt(prompt) -> ScoreOutput`
   - `calc_score_delta(entity_id, current_score) -> int`
