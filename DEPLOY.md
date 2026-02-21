@@ -13,6 +13,7 @@ SignalForge SCOUT SYSTEM のデプロイ手順書です。
 | `OPENAI_API_KEY` | OpenAI の API キー | (Secret) |
 | `YOUTUBE_API_KEY` | Google Cloud の YouTube Data API キー | (Secret) |
 | `DISCORD_WEBHOOK_URL` | 通知先の Discord Webhook URL | `https://discord.com/api/webhooks/...` |
+| `SCOUT_API_KEY` | API 呼び出し用のシークレットキー | (Secret) |
 
 ## 2. Docker での実行
 
@@ -30,7 +31,8 @@ docker run -d -p 8000:8000 --env-file .env signalforge-scout
 
 1. GitHub リポジトリの `Settings > Secrets and variables > Actions` に以下を登録します。
    - `API_BASE_URL`: デプロイされた API のベースURL（例: `https://api.yourdomain.com`）
-2. `.github/workflows/scout-weekly.yml` が毎週月曜午前9時（JST）に自動実行されます。
+   - `SCOUT_API_KEY`: API 認証用のキー
+2. `.github/workflows/scout-weekly.yml` が毎週月曜午前9時（JST）に自動実行されます。その際、ヘッダーにこのキーが追加されます。
 
 ## 4. 運用・保守
 

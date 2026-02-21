@@ -1,8 +1,9 @@
 """Main entry point for SignalForge FastAPI application."""
 
 import logging
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from api import runs, pins, commands
+from api.deps import verify_api_key
 
 # Configure logging
 logging.basicConfig(
@@ -18,9 +19,9 @@ app = FastAPI(
 )
 
 # Register Routers
-app.include_router(runs.router)
-app.include_router(pins.router)
-app.include_router(commands.router)
+app.include_router(runs.router, dependencies=[Depends(verify_api_key)])
+app.include_router(pins.router, dependencies=[Depends(verify_api_key)])
+app.include_router(commands.router, dependencies=[Depends(verify_api_key)])
 
 
 @app.get("/")
