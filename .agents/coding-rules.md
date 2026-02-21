@@ -23,3 +23,4 @@
 ## Testing
 - Unit-test pure logic first (score sum, classification, dedup, delta).
 - Add integration checks for external adapters.
+- **Always run tests and development commands within the virtual environment (`.venv`).**

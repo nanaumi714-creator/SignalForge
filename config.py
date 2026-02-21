@@ -17,6 +17,8 @@ class Settings(BaseSettings):
 
     youtube_api_key: str = Field(..., alias="YOUTUBE_API_KEY")
     discord_webhook_url: str = Field(..., alias="DISCORD_WEBHOOK_URL")
+    
+    scout_api_key: str = Field(..., alias="SCOUT_API_KEY")
 
     hot_threshold: int = Field(85, alias="HOT_THRESHOLD")
     batch_size: int = Field(5, alias="BATCH_SIZE")
