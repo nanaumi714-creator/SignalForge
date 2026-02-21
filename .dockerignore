@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+.git/
+.github/
+tests/
+test_output.txt
+test_trend_output.txt
+test_trend_output_utf8.txt
+.pytest_cache/
