@@ -234,3 +234,55 @@ def get_last_score(entity_id: str) -> dict[str, Any] | None:
     except Exception:
         logger.exception("Failed to fetch last score. entity_id=%s", entity_id)
         raise
+
+
+def get_scores_by_run(run_id: str) -> list[dict[str, Any]]:
+    """Fetch scores and joined entity data for a run."""
+
+    try:
+        sb = get_supabase_client()
+        response = (
+            sb.table("scout_scores")
+            .select(
+                "id, entity_id, total_score, category, score_reason, "
+                "scout_entities!inner(channel_title)"
+            )
+            .eq("run_id", run_id)
+            .execute()
+        )
+        rows = response.data or []
+        results: list[dict[str, Any]] = []
+
+        for row in rows:
+            entity = row.get("scout_entities") or {}
+            score_reason = row.get("score_reason") or {}
+            results.append(
+                {
+                    "score_id": str(row["id"]),
+                    "entity_id": str(row["entity_id"]),
+                    "display_name": entity.get("channel_title") or "Unknown channel",
+                    "total_score": float(row["total_score"]),
+                    "category": row["category"],
+                    "score_delta": score_reason.get("score_delta", 0),
+                }
+            )
+
+        return results
+    except Exception:
+        logger.exception("Failed to fetch scores by run. run_id=%s", run_id)
+        raise
+
+
+def update_score_classification(score_id: str, classification: str) -> None:
+    """Update the category (classification) for a score."""
+
+    try:
+        sb = get_supabase_client()
+        sb.table("scout_scores").update({"category": classification}).eq("id", score_id).execute()
+    except Exception:
+        logger.exception(
+            "Failed to update score classification. score_id=%s classification=%s",
+            score_id,
+            classification,
+        )
+        raise
