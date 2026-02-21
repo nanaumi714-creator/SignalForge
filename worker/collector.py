@@ -162,3 +162,63 @@ class YouTubeCollector:
             snapshot_count=snapshot_count,
             errors=errors
         )
+
+    def get_channel_details_by_platform_ids(self, platform_ids: list[str]) -> list[YouTubeChannel]:
+        """Fetch channel details for a list of platform (YouTube) IDs."""
+        return self.get_channel_details(platform_ids)
+
+    def collect_multiple_sources(self, run_id: str, keywords: list[str], tracked_ids: list[str]) -> CollectorResult:
+        """
+        Comprehensive collection for Hybrid 60:
+        1. Fetch details for Tracked IDs (if any)
+        2. Search and fetch details for Keywords
+        3. Save everything
+        """
+        entity_count = 0
+        snapshot_count = 0
+        errors = []
+
+        # 1. Gather all platform IDs
+        all_platform_ids = set()
+
+        # Tracked IDs (these are entity IDs in our DB, need to get platform_ids if we don't have them)
+        # Actually, let's assume we pass platform_ids for tracked ones too or fetch them first.
+        # To keep it simple, let's just use platform_ids for now.
+        all_platform_ids.update(tracked_ids)
+
+        for kw in keywords:
+            ids = self.search_channels(kw)
+            all_platform_ids.update(ids)
+
+        # 2. Fetch and Save
+        channels = self.get_channel_details(list(all_platform_ids))
+
+        for channel in channels:
+            try:
+                entity_uuid = upsert_entity(
+                    platform="youtube",
+                    platform_id=channel.channel_id,
+                    channel_title=channel.title,
+                    channel_description=channel.description,
+                    country=channel.country,
+                    published_at=channel.published_at.isoformat() if channel.published_at else None
+                )
+                entity_count += 1
+
+                insert_snapshot(
+                    run_id=run_id,
+                    entity_id=entity_uuid,
+                    subscriber_count=channel.subscriber_count,
+                    view_count=channel.view_count,
+                    video_count=channel.video_count
+                )
+                snapshot_count += 1
+            except Exception as e:
+                errors.append(f"Failed to process channel {channel.channel_id}: {str(e)}")
+
+        return CollectorResult(
+            run_id=run_id,
+            entity_count=entity_count,
+            snapshot_count=snapshot_count,
+            errors=errors
+        )

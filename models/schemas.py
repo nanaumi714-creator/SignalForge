@@ -103,3 +103,49 @@ class ScoreOutput(BaseModel):
             + self.ease_of_contact
             + self.style_fit
         )
+
+
+class RunRequest(BaseModel):
+    """Request payload to start a new scout run."""
+
+    run_type: str = Field("manual", pattern="^(manual|scheduled)$")
+    config: dict[str, Any] = Field(default_factory=dict)
+    notify_discord: bool = True
+
+
+class RunResponse(BaseModel):
+    """Response identifying a newly created run."""
+
+    run_id: str
+    status: str
+
+
+class RunStatusResponse(BaseModel):
+    """Response for checking run status and summary."""
+
+    run_id: str
+    status: str
+    summary: dict[str, Any] | None = None
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+
+
+class PinRequest(BaseModel):
+    """Request payload to pin an entity."""
+
+    entity_id: str
+    note: str | None = None
+    pinned_by: str | None = None
+
+
+class PinResponse(BaseModel):
+    """Response for pinning operation."""
+
+    id: str
+    entity_id: str
+
+
+class CommandRequest(BaseModel):
+    """Slash command request payload."""
+
+    text: str

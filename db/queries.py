@@ -286,3 +286,116 @@ def update_score_classification(score_id: str, classification: str) -> None:
             classification,
         )
         raise
+
+
+def insert_pin(entity_id: str, note: str | None = None, pinned_by: str | None = None) -> str:
+    """Insert or update a pin for an entity."""
+
+    try:
+        sb = get_supabase_client()
+        payload = {"entity_id": entity_id, "note": note, "pinned_by": pinned_by}
+        response = sb.table("scout_pins").upsert(payload, on_conflict="entity_id").execute()
+        data = response.data or []
+        if not data or "id" not in data[0]:
+            raise ValueError("Insert pin response does not include pin id.")
+
+        return str(data[0]["id"])
+    except Exception:
+        logger.exception("Failed to insert pin. entity_id=%s", entity_id)
+        raise
+
+
+def delete_pin(entity_id: str) -> None:
+    """Delete a pin for an entity."""
+
+    try:
+        sb = get_supabase_client()
+        sb.table("scout_pins").delete().eq("entity_id", entity_id).execute()
+    except Exception:
+        logger.exception("Failed to delete pin. entity_id=%s", entity_id)
+        raise
+
+
+def get_pins() -> list[dict[str, Any]]:
+    """Fetch all pins with joined entity data."""
+
+    try:
+        sb = get_supabase_client()
+        response = (
+            sb.table("scout_pins")
+            .select("id, entity_id, note, pinned_by, scout_entities(channel_title)")
+            .execute()
+        )
+        rows = response.data or []
+        results = []
+        for row in rows:
+            entity = row.get("scout_entities") or {}
+            results.append(
+                {
+                    "pin_id": str(row["id"]),
+                    "entity_id": str(row["entity_id"]),
+                    "display_name": entity.get("channel_title") or "Unknown",
+                    "note": row.get("note"),
+                    "pinned_by": row.get("pinned_by"),
+                }
+            )
+        return results
+    except Exception:
+        logger.exception("Failed to fetch pins.")
+        raise
+
+
+def get_last_success_run_id() -> str | None:
+    """Fetch the ID of the most recent successful run."""
+
+    try:
+        sb = get_supabase_client()
+        response = (
+            sb.table("scout_runs")
+            .select("id")
+            .eq("status", "success")
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        rows = response.data or []
+        return str(rows[0]["id"]) if rows else None
+    except Exception:
+        logger.exception("Failed to fetch last success run_id.")
+        raise
+
+
+def get_entities_by_classification(run_id: str, category: str, limit: int = 10) -> list[str]:
+    """Fetch list of entity IDs for a specific classification in a run."""
+
+    try:
+        sb = get_supabase_client()
+        response = (
+            sb.table("scout_scores")
+            .select("entity_id")
+            .eq("run_id", run_id)
+            .eq("category", category)
+            .order("total_score", desc=True)
+            .limit(limit)
+            .execute()
+        )
+        rows = response.data or []
+        return [str(row["entity_id"]) for row in rows]
+    except Exception:
+        logger.exception(
+            "Failed to fetch entities by classification. run_id=%s, category=%s", run_id, category
+        )
+        raise
+
+
+def get_pinned_entity_ids() -> list[str]:
+    """Fetch all pinned entity IDs."""
+
+    try:
+        sb = get_supabase_client()
+        response = sb.table("scout_pins").select("entity_id").execute()
+        rows = response.data or []
+        return [str(row["entity_id"]) for row in rows]
+    except Exception:
+        logger.exception("Failed to fetch pinned entity_ids.")
+        raise
