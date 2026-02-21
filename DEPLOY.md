@@ -34,7 +34,25 @@ docker run -d -p 8000:8000 --env-file .env signalforge-scout
    - `SCOUT_API_KEY`: API 認証用のキー
 2. `.github/workflows/scout-weekly.yml` が毎週月曜午前9時（JST）に自動実行されます。その際、ヘッダーにこのキーが追加されます。
 
-## 4. 運用・保守
+## 4. 動作確認
 
-- **ログの確認**: コンテナの標準出力を確認してください。
-- **ヘルスチェック**: `GET /` へのアクセスで `{"status":"online"}` が返ることを確認してください。
+### ヘルスチェック
+`GET /` へのアクセスで `{"status":"online"}` が返ることを確認してください。
+
+### API 実行テスト (PowerShell)
+`.env` に設定した `SCOUT_API_KEY` を使用して、以下のコマンドで実行テストが可能です。
+
+```powershell
+$headers = @{
+    "Content-Type" = "application/json"
+    "X-API-KEY" = "your_api_key_here"
+}
+$body = '{"run_type":"manual", "notify_discord":false}'
+
+Invoke-RestMethod -Uri "http://localhost:8000/v1/scout/runs" -Method Post -Headers $headers -Body $body
+```
+
+## 5. 運用・保守
+
+- **ログの確認**: コンテナの標準出力を確認してください (`docker logs -f <container_id>`)。
+- **ヘルスチェック**: `GET /` は認証なしでアクセス可能です。
