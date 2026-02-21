@@ -15,4 +15,5 @@ jobs:
         run: |
           curl -X POST "${{ secrets.API_BASE_URL }}/v1/scout/runs" \
             -H "Content-Type: application/json" \
+            -H "X-API-KEY: ${{ secrets.SCOUT_API_KEY }}" \
             -d '{"run_type": "scheduled", "notify_discord": true}'
