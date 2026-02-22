@@ -25,6 +25,7 @@ class YouTubeVideo(BaseModel):
 
     video_id: str
     published_at: datetime
+    video_type: str = "normal"  # normal, live, shorts
 
 
 class CollectorResult(BaseModel):

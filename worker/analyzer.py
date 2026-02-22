@@ -17,19 +17,19 @@ from models.schemas import ScoreInput, ScoreOutput
 logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """
-あなたは海外クリエイターのスカウト担当アナリストです。
-与えられたYouTubeチャンネルデータを分析し、以下のJSON形式で返答してください。
-必ずJSONのみを返し、説明文は不要です。
+あなたは海外クリエイターの市場分析スペシャリストです。
+提供されたYouTubeチャンネルデータ（登録者数、再生数、直近の通常動画・ライブ・ショートの分布とタイトル）を詳細に分析し、以下のJSON形式で返答してください。
+特に「どのような企画がヒットしているか（企画力）」「ライブやショートの活用戦略」を重点的に評価してください。
 
 {
   "demand_match": <0-30の整数>,
   "improvement_potential": <0-20の整数>,
   "ability_to_pay": <0-15の整数>,
-  "ease_of_contact": <0-15の整数>,
+  "ease_of_contact": <0-15 de 整数>,
   "style_fit": <0-20の整数>,
-  "summary": "<200字以内の日本語サマリ>",
-  "fit_reasons": ["<理由1>", "<理由2>", "<理由3>"],
-  "recommended_offer": "<推奨オファー内容1文>"
+  "summary": "<200字以内の日本語サバリ。動画形式の活用傾向を含めてください>",
+  "fit_reasons": ["<企画ジャンルの評価>", "<動画形式の活用戦略>", "<成長ポテンシャル>"],
+  "recommended_offer": "<具体的な推奨オファー提案1文>"
 }
 """.strip()
 
@@ -91,7 +91,7 @@ class Analyzer:
         return current_score - previous_total
 
     def analyze_batch(self, run_id: str, snapshots: list[dict[str, Any]]) -> list[str]:
-        """Analyze snapshots in batches of 5 and save score rows."""
+        """Analyze snapshots in batches and save score rows."""
 
         errors: list[str] = []
 
@@ -123,30 +123,55 @@ class Analyzer:
 
         return errors
 
+    def analyze_aggregated(self, run_id: str, snapshots: list[dict[str, Any]]) -> dict[str, Any]:
+        """Analyze multiple entities at once and return top recommendations."""
+        if not snapshots:
+            return {"recommendations": []}
+
+        # Context build for multiple entities
+        context_items = []
+        for s in snapshots[:10]: # Limit to 10 for context window
+            context_items.append(
+                f"ID: {s['entity_id']}, Name: {s['display_name']}, Subs: {s['subscribers']}, Views: {s['total_views']}"
+            )
+        
+        prompt = "以下は収集されたチャンネルリストです:\n" + "\n".join(context_items)
+
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                response_format={"type": "json_object"},
+                messages=[
+                    {"role": "system", "content": SYSTEM_PROMPT_AGGREGATED},
+                    {"role": "user", "content": prompt},
+                ],
+            )
+            content = response.choices[0].message.content or "{}"
+            return json.loads(content)
+        except Exception:
+            logger.exception("Aggregated analysis failed.")
+            return {"recommendations": [], "error": "Analysis failed"}
+
     def extract_trends(self, run_id: str) -> dict[str, Any]:
         """
-        Analyze recent scores and snapshots to identify qualitative and quantitative trends.
-        Returns a dict with 7d and 30d growth keywords and summaries.
+        Analyze recent scores to identify trends.
         """
         try:
-            # 1. Fetch recent scores for qualitative analysis
             scores = get_scores_by_run(run_id)
             if not scores:
-                return {"7d": [], "30d": [], "keywords": []}
+                return {"keywords": []}
 
-            # Prepare text for GPT analysis
             text_context = "\n".join([
                 f"Entity: {s['display_name']}, TotalScore: {s['total_score']}, Delta: {s['score_delta']}"
-                for s in scores[:20] # Top 20 for context
+                for s in scores[:20]
             ])
 
             prompt = (
-                "以下のクリエイター分析結果から、現在市場で注目されているキーワードやトレンドを3つ抽出してください。\n"
+                "以下の分析結果からトレンドワードを3つ抽出してください。\n"
                 "返答形式: キーワード1, キーワード2, キーワード3\n\n"
                 f"{text_context}"
             )
 
-            # Simplified GPT call for keywords
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
@@ -157,17 +182,32 @@ class Analyzer:
             )
             keywords_text = response.choices[0].message.content or ""
             keywords = [k.strip() for k in keywords_text.split(",") if k.strip()]
-
-            # 2. Quantitative Growth (Placeholder for Phase 6, can be more complex)
-            # In a real scenario, we'd fetch snapshots from 7d/30d ago and compare.
-            # For now, we return the identified keywords as the primary trend output.
             
             return {
                 "7d_trends": keywords[:2],
                 "30d_trends": keywords[1:3],
                 "keywords": keywords
             }
-
         except Exception:
-            logger.exception("Failed to extract trends for run_id=%s", run_id)
+            logger.exception("Trend extraction failed.")
             return {"errors": ["Trend extraction failed"]}
+
+
+SYSTEM_PROMPT_AGGREGATED = """
+あなたは海外クリエイターの市場アナリストです。
+提供された複数のYouTubeチャンネルデータリストを分析し、スカウト優先度が高い上位3件を選んで以下のJSON形式で返答してください。
+必ずJSONのみを返し、説明文は不要です。
+
+{
+  "recommendations": [
+    {
+      "rank": <1-3の整数>,
+      "name": "<チャンネル名>",
+      "id": "<entity_id>",
+      "score_preview": <0-100の推定合計スコア>,
+      "reason": "<日本語での選定理由1文>",
+      "recommended_offer": "<具体的な推奨オファー1文>"
+    }
+  ]
+}
+""".strip()

@@ -23,6 +23,16 @@ class Settings(BaseSettings):
     hot_threshold: int = Field(85, alias="HOT_THRESHOLD")
     batch_size: int = Field(5, alias="BATCH_SIZE")
 
+    # Phase 9: OpenAI Analysis Optimization
+    analysis_mode: str = Field("smart", alias="ANALYSIS_MODE")
+    min_subscribers: int = Field(500, alias="MIN_SUBSCRIBERS")
+    min_upload_freq_days: int = Field(30, alias="MIN_UPLOAD_FREQ_DAYS")
+    re_analyze_days: int = Field(14, alias="RE_ANALYZE_DAYS")
+
+    # Phase 10: Web Search Integration
+    discovery_enabled: bool = Field(False, alias="DISCOVERY_ENABLED")
+    openai_search_model: str = Field("gpt-4o-search-preview", alias="OPENAI_SEARCH_MODEL")
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore", populate_by_name=True)
 
 

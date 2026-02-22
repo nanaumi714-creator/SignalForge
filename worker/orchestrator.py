@@ -70,41 +70,91 @@ def run_scout(run_id: str, config: dict[str, Any], notify_discord: bool = True) 
     }
 
     try:
-        # 1. Collection (Hybrid 60)
+        # 1. Discovery (Phase 10: Web Search)
+        discovery_ids = []
+        if settings.discovery_enabled:
+            logger.info("Starting web discovery for run_id=%s", run_id)
+            from worker.discovery import DiscoveryWorker
+            dw = DiscoveryWorker()
+            keywords = config.get("keywords", ["VTuber", "Cover", "Singer"])
+            discovered = dw.discover(keywords)
+            
+            if discovered:
+                collector = YouTubeCollector()
+                discovery_ids = collector.resolve_discovered_channels(discovered)
+                logger.info("Discovered %d new potential channels via web search.", len(discovery_ids))
+
+        # 2. Collection (Hybrid 60)
         logger.info("Starting hybrid collection for run_id=%s", run_id)
         collector = YouTubeCollector()
         
         tracked_pids = get_tracked_platform_ids()
+        # Merge discovered IDs into collection
+        all_ids_to_collect = list(set(tracked_pids) | set(discovery_ids))
+        
         keywords = config.get("keywords", ["VTuber", "Cover", "Singer"])
         
-        col_result = collector.collect_multiple_sources(run_id, keywords, tracked_pids)
+        col_result = collector.collect_multiple_sources(run_id, keywords, all_ids_to_collect)
         
         summary["scanned"] = col_result.entity_count
         if col_result.errors:
             summary["errors"].extend(col_result.errors)
 
         # 2. GPT Analysis
-        logger.info("Starting analyzer for run_id=%s", run_id)
+        logger.info("Starting analyzer for run_id=%s (mode=%s)", run_id, settings.analysis_mode)
         analyzer = Analyzer()
-        snapshots = get_snapshots_by_run(run_id)
-        ana_errors = analyzer.analyze_batch(run_id, snapshots)
-        if ana_errors:
-            summary["errors"].extend(ana_errors)
+        all_snapshots = get_snapshots_by_run(run_id)
+        
+        # Filtering logic (Smart Mode / Aggregated Mode)
+        to_analyze = []
+        skipped_count = 0
+        
+        for snap in all_snapshots:
+            entity_id = snap["entity_id"]
+            last_score = get_last_score(entity_id)
+            
+            should_ana, reason = True, None
+            if settings.analysis_mode in ["smart", "aggregated"]:
+                from worker.scorer import should_analyze
+                should_ana, reason = should_analyze(snap, last_score, settings)
+                
+            if should_ana:
+                to_analyze.append(snap)
+            else:
+                logger.info("Skipping analysis for entity_id=%s: %s", entity_id, reason)
+                skipped_count += 1
+
+        logger.info("Analysis candidates: %d/%d (Skipped: %d)", len(to_analyze), len(all_snapshots), skipped_count)
+
+        if settings.analysis_mode == "aggregated":
+            agg_result = analyzer.analyze_aggregated(run_id, to_analyze)
+            summary["aggregated_analysis"] = agg_result
+            # In aggregated mode, we might not have individual scores for everyone,
+            # but we can still extract trends from those analyzed or the list.
+        else:
+            ana_errors = analyzer.analyze_batch(run_id, to_analyze)
+            if ana_errors:
+                summary["errors"].extend(ana_errors)
 
         # 3. Classification
         logger.info("Starting scoring and classification for run_id=%s", run_id)
         scores = get_scores_by_run(run_id)
-        classification_result = classify_scores(scores)
-        
-        # Save classifications to DB
-        for category, items in classification_result.items():
-            for item in items:
-                update_score_classification(item["score_id"], category)
+        if not scores and settings.analysis_mode == "aggregated":
+            # For aggregated mode, classification might need a different approach or skip
+            classification_result = {"top": [], "hot": [], "watch": [], "normal": []}
+        else:
+            classification_result = classify_scores(scores)
+            
+            # Save classifications to DB
+            for category, items in classification_result.items():
+                for item in items:
+                    update_score_classification(item["score_id"], category)
 
         # 4. Trend Extraction
         logger.info("Starting trend extraction for run_id=%s", run_id)
         trend_result = analyzer.extract_trends(run_id)
         summary["trends"] = trend_result
+        summary["skipped_analysis"] = skipped_count
 
         # 5. Notification
         if notify_discord:

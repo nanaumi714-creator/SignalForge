@@ -72,27 +72,58 @@ class YouTubeCollector:
             return []
 
     def get_recent_videos(self, channel_id: str, max_results: int = 10) -> list[YouTubeVideo]:
-        """Get recent videos for a channel to calculate frequency."""
+        """Fetch recent videos and identify type (normal/live/shorts)."""
         try:
-            request = self.youtube.search().list(
+            request = self.youtube.activities().list(
                 channelId=channel_id,
-                part="snippet",
-                order="date",
-                type="video",
-                maxResults=max_results
+                part="snippet,contentDetails",
+                maxResults=max_results * 2, # Fetch more to reliably get videos
             )
             response = request.execute()
+            
+            video_ids = [
+                item["contentDetails"]["upload"]["videoId"]
+                for item in response.get("items", [])
+                if "upload" in item.get("contentDetails", {})
+            ]
+            
+            if not video_ids:
+                return []
 
+            # Get details for duration and live info
+            details_req = self.youtube.videos().list(
+                id=",".join(video_ids[:max_results]),
+                part="snippet,contentDetails,liveStreamingDetails"
+            )
+            details_res = details_req.execute()
+            
             videos = []
-            for item in response.get("items", []):
-                snippet = item.get("snippet", {})
+            for v in details_res.get("items", []):
+                snippet = v["snippet"]
+                details = v["contentDetails"]
+                
+                # Determine type
+                v_type = "normal"
+                if v.get("liveStreamingDetails"):
+                    v_type = "live"
+                else:
+                    # Simple duration check for shorts (PT#S or PT#M#S)
+                    duration = details.get("duration", "")
+                    if "M" not in duration and "H" not in duration:
+                        if "S" in duration:
+                            sec_str = duration.split("T")[-1].replace("S", "")
+                            if sec_str and sec_str.isdigit() and int(sec_str) < 60:
+                                v_type = "shorts"
+
                 videos.append(YouTubeVideo(
-                    video_id=item["id"]["videoId"],
-                    published_at=snippet.get("publishedAt")
+                    video_id=v["id"],
+                    published_at=datetime.fromisoformat(snippet["publishedAt"].replace("Z", "+00:00")),
+                    video_type=v_type
                 ))
+                
             return videos
-        except Exception:
-            logger.exception("Failed to get recent videos for channel: %s", channel_id)
+        except Exception as e:
+            logger.error(f"Error fetching videos for {channel_id}: {e}")
             return []
 
     def calculate_upload_frequency(self, videos: list[YouTubeVideo]) -> float:
@@ -222,3 +253,29 @@ class YouTubeCollector:
             snapshot_count=snapshot_count,
             errors=errors
         )
+
+    def resolve_discovered_channels(self, discovery_items: list[dict[str, Any]]) -> list[str]:
+        """Convert discovered name/handle into YouTube channel IDs."""
+        resolved_ids = []
+        for item in discovery_items:
+            query = item.get("handle") or item.get("name")
+            if not query:
+                continue
+            
+            try:
+                # Search for the channel
+                request = self.youtube.search().list(
+                    q=query,
+                    type="channel",
+                    part="id",
+                    maxResults=1
+                )
+                response = request.execute()
+                items = response.get("items", [])
+                if items:
+                    resolved_ids.append(items[0]["id"]["channelId"])
+                    logger.info(f"Resolved '{query}' to channel_id: {resolved_ids[-1]}")
+            except Exception as e:
+                logger.error(f"Failed to resolve channel for '{query}': {e}")
+        
+        return resolved_ids

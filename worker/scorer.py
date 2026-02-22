@@ -44,3 +44,37 @@ def classify_scores(scores: list[dict[str, Any]]) -> dict[str, list[dict[str, An
         "watch": watch_list,
         "normal": normal_list,
     }
+
+
+def should_analyze(
+    snapshot: dict[str, Any],
+    last_score: dict[str, Any] | None,
+    settings: Any
+) -> tuple[bool, str | None]:
+    """
+    Determine if a channel should be analyzed by GPT based on screening criteria.
+    Returns (bool, reason_if_skipped).
+    """
+    # 1. Subscriber Count Check
+    subs = snapshot.get("subscribers") or 0
+    if subs < settings.min_subscribers:
+        return False, f"Low subscribers ({subs} < {settings.min_subscribers})"
+
+    # 2. Activity Check (Upload Frequency)
+    upload_freq = snapshot.get("upload_freq_days")
+    if upload_freq and upload_freq > settings.min_upload_freq_days:
+        return False, f"Inactive ({upload_freq} days since last post)"
+
+    # 3. Recent Low Score Check (Re-analyze Days)
+    if last_score:
+        from datetime import datetime
+        last_date = last_score.get("created_at")
+        if isinstance(last_date, str):
+            last_date = datetime.fromisoformat(last_date.replace("Z", "+00:00"))
+        
+        if last_date:
+            days_since = (datetime.now(last_date.tzinfo) - last_date).days
+            if days_since < settings.re_analyze_days and last_score.get("category") == "normal":
+                return False, f"Recently analyzed (Normal score, {days_since}d ago)"
+
+    return True, None
