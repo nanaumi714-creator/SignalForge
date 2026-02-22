@@ -6,24 +6,30 @@ SignalForge SCOUT SYSTEM のデプロイ手順書です。
 
 以下の環境変数をデプロイ先のサービス（Paas や Docker）に設定してください。
 
-| 変数名 | 説明 | 例 |
+| 変数名 | 説明 | 設定値の例 / 取得先 |
 |---|---|---|
-| `SUPABASE_URL` | Supabase のプロジェクトURL | `https://xyz.supabase.co` |
-| `SUPABASE_KEY` | Supabase の ANON または SERVICE_ROLE KEY | (Secret) |
+| `SUPABASE_URL` | Supabase Cloud のプロジェクトURL | `https://xyz.supabase.co` (Settings > API) |
+| `SUPABASE_KEY` | Supabase の ANON KEY | (Settings > API > anon public) |
 | `OPENAI_API_KEY` | OpenAI の API キー | (Secret) |
 | `YOUTUBE_API_KEY` | Google Cloud の YouTube Data API キー | (Secret) |
 | `DISCORD_WEBHOOK_URL` | 通知先の Discord Webhook URL | `https://discord.com/api/webhooks/...` |
-| `SCOUT_API_KEY` | API 呼び出し用のシークレットキー | (Secret) |
+| `SCOUT_API_KEY` | API 呼び出し用のシークレットキー | 任意の強力な文字列 (Render の Env Vars で設定) |
 
-## 2. Docker での実行
+## 2. Render へのデプロイ手順
 
-### イメージのビルド
+Render では Docker を使用してデプロイします。
+
+### 手順
+1. Render Dashboard で `New + > Web Service` を選択。
+2. リポジトリを接続。
+3. **Runtime** に `Docker` を選択。
+4. **Environment Variables** に上記の「1. 環境変数の設定」の各値を入力。
+5. デプロイを開始。
+
+### Docker でのローカル確認
+本番環境に上げる前に、ローカルで Docker が動くか確認する場合は以下を実行します。
 ```bash
 docker build -t signalforge-scout .
-```
-
-### コンテナの起動
-```bash
 docker run -d -p 8000:8000 --env-file .env signalforge-scout
 ```
 
