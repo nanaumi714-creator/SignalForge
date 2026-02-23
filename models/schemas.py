@@ -131,6 +131,35 @@ class RunStatusResponse(BaseModel):
     finished_at: datetime | None = None
 
 
+class ScoutStatusResponse(BaseModel):
+    """Response for the latest run status overview."""
+
+    run_id: str | None = None
+    status: str
+    run_type: str | None = None
+    summary: dict[str, Any] | None = None
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+
+
+class ReportItem(BaseModel):
+    """Single ranked report row."""
+
+    entity_id: str
+    display_name: str
+    total_score: float | int | None = None
+    category: str | None = None
+    trend_summary: str | None = None
+
+
+class LatestReportResponse(BaseModel):
+    """Latest report payload used by API and Discord."""
+
+    run_id: str
+    item_count: int
+    items: list[ReportItem] = Field(default_factory=list)
+
+
 class PinRequest(BaseModel):
     """Request payload to pin an entity."""
 
@@ -144,6 +173,31 @@ class PinResponse(BaseModel):
 
     id: str
     entity_id: str
+
+
+class DiscordInteractionOption(BaseModel):
+    """Discord interaction command option."""
+
+    name: str
+    type: int
+    value: Any | None = None
+    options: list["DiscordInteractionOption"] = Field(default_factory=list)
+
+
+class DiscordInteractionData(BaseModel):
+    """Discord interaction command metadata."""
+
+    name: str
+    options: list[DiscordInteractionOption] = Field(default_factory=list)
+
+
+class DiscordInteractionRequest(BaseModel):
+    """Subset of Discord interaction payload needed by this service."""
+
+    id: str
+    type: int
+    token: str
+    data: DiscordInteractionData | None = None
 
 
 class CommandRequest(BaseModel):

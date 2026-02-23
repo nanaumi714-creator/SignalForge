@@ -2,7 +2,7 @@
 
 import logging
 from fastapi import FastAPI, Depends
-from api import runs, pins, commands
+from api import runs, pins, commands, status, reports, discord
 from api.deps import verify_api_key
 
 # Configure logging
@@ -22,6 +22,9 @@ app = FastAPI(
 app.include_router(runs.router, dependencies=[Depends(verify_api_key)])
 app.include_router(pins.router, dependencies=[Depends(verify_api_key)])
 app.include_router(commands.router, dependencies=[Depends(verify_api_key)])
+app.include_router(status.router, dependencies=[Depends(verify_api_key)])
+app.include_router(reports.router, dependencies=[Depends(verify_api_key)])
+app.include_router(discord.router)
 
 
 @app.get("/")

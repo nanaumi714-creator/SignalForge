@@ -64,6 +64,7 @@ python main.py run --mode smart
 - `models/`: データ定義 (Pydantic スキーマ)。
 - `tests/`: ユニットテスト。
 - `docs/`: 各フェーズの要件定義および設計書。
+- `docs/setup/discord_interactions.ja.md`: Discord Interactions（スラッシュコマンド）設定手順。
 
 ---
 *SignalForge は AI との対話を通じて継続的に進化しています。詳細は `.agents/progress.md` をご確認ください。*

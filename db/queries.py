@@ -399,3 +399,54 @@ def get_pinned_entity_ids() -> list[str]:
     except Exception:
         logger.exception("Failed to fetch pinned entity_ids.")
         raise
+
+
+def get_latest_run() -> dict[str, Any] | None:
+    """Fetch the most recent run regardless of status."""
+
+    try:
+        sb = get_supabase_client()
+        response = (
+            sb.table("scout_runs")
+            .select("id, status, summary, run_type, created_at, started_at, finished_at")
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        rows = response.data or []
+        return rows[0] if rows else None
+    except Exception:
+        logger.exception("Failed to fetch latest run.")
+        raise
+
+
+def get_top_scores_for_run(run_id: str, limit: int = 10) -> list[dict[str, Any]]:
+    """Fetch top scored entities for a run."""
+
+    try:
+        sb = get_supabase_client()
+        response = (
+            sb.table("scout_scores")
+            .select("entity_id, total_score, category, trend_summary, scout_entities(channel_title)")
+            .eq("run_id", run_id)
+            .order("total_score", desc=True)
+            .limit(limit)
+            .execute()
+        )
+        rows = response.data or []
+        results: list[dict[str, Any]] = []
+        for row in rows:
+            entity = row.get("scout_entities") or {}
+            results.append(
+                {
+                    "entity_id": str(row["entity_id"]),
+                    "display_name": entity.get("channel_title") or "Unknown",
+                    "total_score": row.get("total_score"),
+                    "category": row.get("category"),
+                    "trend_summary": row.get("trend_summary"),
+                }
+            )
+        return results
+    except Exception:
+        logger.exception("Failed to fetch top scores for run. run_id=%s", run_id)
+        raise
