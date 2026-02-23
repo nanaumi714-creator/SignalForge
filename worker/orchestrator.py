@@ -13,6 +13,7 @@ from db.queries import (
     get_entities_by_classification,
     get_pinned_entity_ids,
     update_score_classification,
+    get_last_score,
 )
 from worker.collector import YouTubeCollector
 from worker.analyzer import Analyzer

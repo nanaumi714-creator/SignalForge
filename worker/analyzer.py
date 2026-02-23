@@ -178,7 +178,7 @@ class Analyzer:
                     {"role": "system", "content": "あなたは市場アナリストです。"},
                     {"role": "user", "content": prompt},
                 ],
-                max_tokens=50
+                max_completion_tokens=50
             )
             keywords_text = response.choices[0].message.content or ""
             keywords = [k.strip() for k in keywords_text.split(",") if k.strip()]
