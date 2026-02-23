@@ -17,6 +17,7 @@ class Settings(BaseSettings):
 
     youtube_api_key: str = Field(..., alias="YOUTUBE_API_KEY")
     discord_webhook_url: str = Field(..., alias="DISCORD_WEBHOOK_URL")
+    discord_public_key: str | None = Field(None, alias="DISCORD_PUBLIC_KEY")
     
     scout_api_key: str = Field(..., alias="SCOUT_API_KEY")
 
