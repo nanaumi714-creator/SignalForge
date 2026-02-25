@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     batch_size: int = Field(5, alias="BATCH_SIZE")
 
     # Phase 9: OpenAI Analysis Optimization
-    analysis_mode: str = Field("smart", alias="ANALYSIS_MODE")
+    analysis_mode: str = Field("aggregated", alias="ANALYSIS_MODE")
     min_subscribers: int = Field(500, alias="MIN_SUBSCRIBERS")
     min_upload_freq_days: int = Field(30, alias="MIN_UPLOAD_FREQ_DAYS")
     re_analyze_days: int = Field(14, alias="RE_ANALYZE_DAYS")

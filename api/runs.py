@@ -21,7 +21,8 @@ async def start_run(request: RunRequest, background_tasks: BackgroundTasks):
             run_scout, 
             run_id=run_id, 
             config=request.config, 
-            notify_discord=request.notify_discord
+            notify_discord=request.notify_discord,
+            analysis_mode=request.analysis_mode,
         )
         return RunResponse(run_id=run_id, status="running")
     except Exception as e:

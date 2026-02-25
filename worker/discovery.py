@@ -5,7 +5,6 @@ import logging
 from typing import Any
 from openai import OpenAI
 from config import get_settings
-from worker.search_tool import TavilySearchTool
 
 logger = logging.getLogger(__name__)
 

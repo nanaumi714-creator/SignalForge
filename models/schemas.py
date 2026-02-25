@@ -112,6 +112,7 @@ class RunRequest(BaseModel):
     run_type: str = Field("manual", pattern="^(manual|scheduled)$")
     config: dict[str, Any] = Field(default_factory=dict)
     notify_discord: bool = True
+    analysis_mode: str = Field("aggregated", pattern="^(smart|aggregated|full)$")
 
 
 class RunResponse(BaseModel):

@@ -61,9 +61,6 @@ pip install -r requirements.txt
 
 # サーバー起動
 uvicorn main:app --reload --port 8000
-
-# 動作確認
-curl -X POST http://localhost:8000/v1/scout/runs -H "Content-Type: application/json" -d '{"run_type":"manual","notify_discord":false}'
 ```
 
 ## Coding Rules（最重要）

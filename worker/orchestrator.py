@@ -58,7 +58,7 @@ def get_tracked_platform_ids() -> list[str]:
     return [row["platform_id"] for row in response.data or []]
 
 
-def run_scout(run_id: str, config: dict[str, Any], notify_discord: bool = True) -> None:
+def run_scout(run_id: str, config: dict[str, Any], notify_discord: bool = True, analysis_mode: str = "aggregated") -> None:
     """
     Execute the full Scout System pipeline:
     Collector -> Analyzer -> Scorer -> Notifier
@@ -102,7 +102,7 @@ def run_scout(run_id: str, config: dict[str, Any], notify_discord: bool = True) 
             summary["errors"].extend(col_result.errors)
 
         # 2. GPT Analysis
-        logger.info("Starting analyzer for run_id=%s (mode=%s)", run_id, settings.analysis_mode)
+        logger.info("Starting analyzer for run_id=%s (mode=%s)", run_id, analysis_mode)
         analyzer = Analyzer()
         all_snapshots = get_snapshots_by_run(run_id)
         
@@ -115,7 +115,7 @@ def run_scout(run_id: str, config: dict[str, Any], notify_discord: bool = True) 
             last_score = get_last_score(entity_id)
             
             should_ana, reason = True, None
-            if settings.analysis_mode in ["smart", "aggregated"]:
+            if analysis_mode in ["smart", "aggregated"]:
                 from worker.scorer import should_analyze
                 should_ana, reason = should_analyze(snap, last_score, settings)
                 
@@ -127,7 +127,7 @@ def run_scout(run_id: str, config: dict[str, Any], notify_discord: bool = True) 
 
         logger.info("Analysis candidates: %d/%d (Skipped: %d)", len(to_analyze), len(all_snapshots), skipped_count)
 
-        if settings.analysis_mode == "aggregated":
+        if analysis_mode == "aggregated":
             agg_result = analyzer.analyze_aggregated(run_id, to_analyze)
             summary["aggregated_analysis"] = agg_result
             # In aggregated mode, we might not have individual scores for everyone,
@@ -140,7 +140,7 @@ def run_scout(run_id: str, config: dict[str, Any], notify_discord: bool = True) 
         # 3. Classification
         logger.info("Starting scoring and classification for run_id=%s", run_id)
         scores = get_scores_by_run(run_id)
-        if not scores and settings.analysis_mode == "aggregated":
+        if not scores and analysis_mode == "aggregated":
             # For aggregated mode, classification might need a different approach or skip
             classification_result = {"top": [], "hot": [], "watch": [], "normal": []}
         else:
